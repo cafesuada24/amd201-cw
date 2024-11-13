@@ -1,3 +1,5 @@
+# nullable disable
+
 namespace UrlShortener.Domain.Entities;
 
 public class ShortenedUrl : EntityBase<int>
@@ -8,5 +10,5 @@ public class ShortenedUrl : EntityBase<int>
     public DateTime? ExpireAt { get; set; }
     public int ClickCount { get; set; }
     public DateTime? LastAccessTime { get; set; }
-    public UrlStatus Status { get; set; }
+    public int Status { get; set; }
 }

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 // Put into the same namespace of Entities to skip using its reference namespace on inherit
-namespace ThreeLayerSample.Domain.Entities;
+namespace UrlShortener.Domain.Entities;
 
 public interface IEntityBase<TKey>
 {
