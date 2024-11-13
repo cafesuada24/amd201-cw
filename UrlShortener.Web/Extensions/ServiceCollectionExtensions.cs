@@ -19,7 +19,7 @@ public static class ServiceCollectionExtensions {
 
             services.AddDbContext<ShortUrlDbContext>(options => {
                 options.UseSqlite(
-                    configuration.GetConnectionString("UrlShortenedContext") ?? throw new InvalidOperationException("Connection string 'UrlShortenedContext' not found."),
+                    configuration.GetConnectionString("ShortenedUrlContext") ?? throw new InvalidOperationException("Connection string 'ShortenedUrlContext' not found."),
                     sqliteOptions => sqliteOptions.CommandTimeout(128));
             });
 
