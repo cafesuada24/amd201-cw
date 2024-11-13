@@ -12,8 +12,8 @@ public class UnitOfWork : IUnitOfWork
     private IsolationLevel? _isolationLevel;
 
     public UnitOfWork(DbFactory dbFactory) {
-            DbContext = dbFactory.DbContext;
-            Repositories = new Dictionary<string, dynamic>();
+        DbContext = dbFactory.DbContext;
+        Repositories = new Dictionary<string, dynamic>();
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) {
@@ -58,36 +58,36 @@ public class UnitOfWork : IUnitOfWork
     }
 
 
-        public void Dispose()
+    public void Dispose()
+    {
+        if (DbContext == null)
+            return;
+        //
+        // Close connection
+        if (DbContext.Database.GetDbConnection().State == ConnectionState.Open)
         {
-                if (DbContext == null)
-                    return;
-                //
-                // Close connection
-                if (DbContext.Database.GetDbConnection().State == ConnectionState.Open)
-                {
-                    DbContext.Database.GetDbConnection().Close();
-                }
-                DbContext.Dispose();
-
-                DbContext = null;
+            DbContext.Database.GetDbConnection().Close();
         }
+        DbContext.Dispose();
+
+        DbContext = null;
+    }
 
     public IRepository<TEntity> Repository<TEntity>() where TEntity : class {
-            var type = typeof(TEntity);
-            var typeName = type.Name;
+        var type = typeof(TEntity);
+        var typeName = type.Name;
 
-            lock (Repositories)
+        lock (Repositories)
+        {
+            if (Repositories.TryGetValue(typeName, out var value) && value != null)
             {
-                if (Repositories.TryGetValue(typeName, out var value) && value != null)
-                {
-                    return (IRepository<TEntity>) value;
-                }
-
-                var repository = new Repository<TEntity>(DbContext);
-
-                Repositories.Add(typeName, repository);
-                return repository;
+                return (IRepository<TEntity>) value;
             }
+
+            var repository = new Repository<TEntity>(DbContext);
+
+            Repositories.Add(typeName, repository);
+            return repository;
+        }
     }
 }
