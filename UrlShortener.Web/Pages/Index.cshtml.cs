@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace UrlShortener.App.Pages;
+namespace UrlShortener.Web.Pages;
 
 public class IndexModel : PageModel
 {
