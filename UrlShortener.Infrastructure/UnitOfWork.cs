@@ -58,19 +58,26 @@ public class UnitOfWork : IUnitOfWork
     }
 
 
-    public void Dispose()
-    {
-        if (DbContext == null)
+    private bool _disposed = false;
+    protected virtual void Dispose(bool disposing) {
+        if (_disposed || DbContext == null) {
             return;
-        //
-        // Close connection
+        }
+
         if (DbContext.Database.GetDbConnection().State == ConnectionState.Open)
         {
             DbContext.Database.GetDbConnection().Close();
         }
-        DbContext.Dispose();
 
-        DbContext = null;
+        if (disposing) {
+            DbContext.Dispose();
+        }
+        _disposed = true;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
 
@@ -91,4 +98,7 @@ public class UnitOfWork : IUnitOfWork
             return repository;
         }
     }
+
+
+
 }
