@@ -71,6 +71,7 @@ public class UnitOfWork : IUnitOfWork
         DbContext.Dispose();
 
         DbContext = null;
+        GC.SuppressFinalize(this);
     }
 
     public IRepository<TEntity> Repository<TEntity>() where TEntity : class {
