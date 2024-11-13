@@ -1,9 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using UrlShortener.Domain.Interfaces;
-using UrlShortener.Domain.Interfaces.Services;
-using UrlShortener.Infrastructure;
-using UrlShortener.Infrastructure.Databases;
-using UrlShortener.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
