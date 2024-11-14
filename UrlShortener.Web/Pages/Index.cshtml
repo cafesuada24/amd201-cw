@@ -9,6 +9,6 @@
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 
     @foreach (var item in Model.ShortenedUrls) {
-        <div>@item.ShortUrl.ToString() @item.OriginalUrl.ToString()</div>
+        <div>@item.ShortUrl.ToString() @item.ClickCount</div>
     }
 </div>
