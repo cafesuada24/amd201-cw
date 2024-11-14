@@ -4,6 +4,7 @@ using UrlShortener.Domain.Interfaces.Services;
 using UrlShortener.Infrastructure;
 using UrlShortener.Infrastructure.Databases;
 using UrlShortener.Service;
+using StackExchange.Redis;
 
 // namespace UrlShortener.Web.Extensions;
 namespace Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,7 @@ public static class ServiceCollectionExtensions {
     	/// <param name="services"></param>
     	/// <param name="configuration"></param>
     	/// <returns></returns>
-    	public static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration) {
+    	public static IServiceCollection ConfigureDatabase(this IServiceCollection services, IConfiguration configuration) {
 
             services.AddDbContext<ShortUrlDbContext>(options => {
                 options.UseSqlite(
@@ -34,8 +35,21 @@ public static class ServiceCollectionExtensions {
     	/// Add instances of in-use services
     	/// </summary>
     	/// <param name="services"></param>
+    	/// <param name="configuration"></param>
     	/// <returns></returns>
-    	public static IServiceCollection AddServices(this IServiceCollection services) {
-            return services.AddScoped<IShortenedUrlService, ShortenedUrlService>();
+    	public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration configuration) {
+			var redisConnStr = configuration.GetConnectionString("Redis") ?? throw new InvalidOperationException("Connection string 'Redis' not found.");
+        services.AddStackExchangeRedisCache(options => {
+				options.Configuration = redisConnStr;
+				// options.InstanceName = "ShortenedUrlCache:";
+		});
+			services.AddSingleton<IConnectionMultiplexer>(sp =>
+				ConnectionMultiplexer.Connect(redisConnStr));
+
+            services.AddScoped<IShortenedUrlService, ShortenedUrlService>();
+			services.AddScoped<IShortenedUrlCacheService, RedisShortenedUrlCacheService>();
+			services.AddHostedService<ShortenedUrlCacheRefreshService>();
+
+			return services;
         }
 }
