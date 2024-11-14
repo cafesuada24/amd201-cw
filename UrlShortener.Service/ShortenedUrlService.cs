@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using UrlShortener.Domain.Entities;
 using UrlShortener.Domain.Interfaces;
 using UrlShortener.Domain.Interfaces.Services;
@@ -22,6 +23,11 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork) : IShortenedUrlService
     public async Task<IList<ShortenedUrl>> GetAll()
     {
         return await _unitOfWork.Repository<ShortenedUrl>().GetAllAsync();
+    }
+
+    public DbSet<ShortenedUrl> GetEntities()
+    {
+        return _unitOfWork.Repository<ShortenedUrl>().Entities;
     }
 
     public Task<ShortenedUrl> GetOne(int urlId)

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using UrlShortener.Domain.Entities;
 
 namespace UrlShortener.Domain.Interfaces.Services;
@@ -10,4 +11,5 @@ public interface IShortenedUrlService {
     Task Update(ShortenedUrl shortenedUrl);
     Task Add(ShortenedUrl shortenedUrl);
     Task Delete(ShortenedUrl shortenedUrl);
+    DbSet<ShortenedUrl> GetEntities();
 }
