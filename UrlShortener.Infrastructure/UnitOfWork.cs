@@ -64,10 +64,6 @@ public class UnitOfWork : IUnitOfWork
             return;
         }
 
-        if (DbContext.Database.GetDbConnection().State == ConnectionState.Open)
-        {
-            DbContext.Database.GetDbConnection().Close();
-        }
 
         if (disposing) {
             DbContext.Dispose();
@@ -98,7 +94,4 @@ public class UnitOfWork : IUnitOfWork
             return repository;
         }
     }
-
-
-
 }
