@@ -5,7 +5,7 @@ using UrlShortener.Domain.Interfaces.Services;
 
 namespace UrlShortener.Service;
 
-public class RedisShortenedUrlCacheService : IShortenedUrlCacheService 
+public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
 {
     private const string ShortUrlKeyPrefix = "url_short:";
     private const string IdKeyPrefix = "url_id:";
@@ -14,7 +14,8 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
     private const string ShortUrlToObjectHash = "shorttoobject";
     private readonly IDatabase _cache;
 
-    public RedisShortenedUrlCacheService(IConnectionMultiplexer connectionMultiplexer) {
+    public RedisShortenedUrlCacheService(IConnectionMultiplexer connectionMultiplexer)
+    {
         _cache = connectionMultiplexer.GetDatabase();
     }
 
@@ -29,7 +30,7 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
         await _cache.SortedSetAddAsync(ClickCountSet, shortUrlKey, url.ClickCount);
     }
 
-    public async Task<ShortenedUrl?> GetFromShortCodeAsync(string shortCode, bool isPrefixIncluded=false)
+    public async Task<ShortenedUrl?> GetFromShortCodeAsync(string shortCode, bool isPrefixIncluded = false)
     {
         var shortUrlKey = $"{(!isPrefixIncluded ? ShortUrlKeyPrefix : "")}{shortCode}";
 
@@ -37,7 +38,7 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
         return serializedData.HasValue ? JsonSerializer.Deserialize<ShortenedUrl>(serializedData.ToString()) : null;
     }
 
-    public async Task<ShortenedUrl?> GetFromUrlIdAsync(int urlId, bool isPrefixIncluded=false)
+    public async Task<ShortenedUrl?> GetFromUrlIdAsync(int urlId, bool isPrefixIncluded = false)
     {
         var idKey = $"{(!isPrefixIncluded ? IdKeyPrefix : "")}{urlId}";
         var shortUrlKey = await _cache.HashGetAsync(IdToShortUrlHash, idKey);
@@ -48,12 +49,15 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
     {
         var topUrlKeys = await _cache.SortedSetRangeByScoreAsync(ClickCountSet, 0, double.MaxValue, Exclude.None, Order.Descending, 0, topN);
         var urls = new List<ShortenedUrl>(topUrlKeys.Length);
-        foreach (var shortUrl in topUrlKeys) {
-            if (shortUrl.IsNull) {
+        foreach (var shortUrl in topUrlKeys)
+        {
+            if (shortUrl.IsNull)
+            {
                 continue;
             }
             var url = await GetFromShortCodeAsync(shortUrl.ToString(), true);
-            if (url != null) {
+            if (url != null)
+            {
                 urls.Add(url);
             }
         }
@@ -66,7 +70,8 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
         await _cache.KeyDeleteAsync(ShortUrlToObjectHash);
         await _cache.KeyDeleteAsync(ClickCountSet);
 
-        foreach (var url in urls) {
+        foreach (var url in urls)
+        {
             await AddUrlAsync(url);
         }
     }

@@ -28,7 +28,8 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
 
     public async Task<ShortenedUrl> Add(string url)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var orignalUrl) || orignalUrl == null) {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var orignalUrl) || orignalUrl == null)
+        {
             throw new ArgumentException("Invalid url format");
         }
         ShortenedUrl shortenedUrl = new() { OriginalUrl = url };
@@ -75,11 +76,19 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
 
     public async Task<string?> GetOriginalUrlAsync(string shortCode)
     {
-        ShortenedUrl? shortenedUrl =
+        var repo = _unitOfWork.Repository<ShortenedUrl>();
+        var shortenedUrl =
             await _shortenedUrlCacheService.GetFromShortCodeAsync(shortCode, false) ??
-            await _unitOfWork.Repository<ShortenedUrl>().Entities.Where(
-                    x => x.ShortCode == shortCode 
-                ).FirstOrDefaultAsync();
+            await repo.Entities.Where(
+                    x => x.ShortCode == shortCode
+                ).SingleAsync();
+        if (shortenedUrl != null)
+        {
+            repo.DbContext.Attach(shortenedUrl);
+            shortenedUrl.LastAccessTime = DateTime.Now;
+            shortenedUrl.ClickCount = shortenedUrl.ClickCount + 1;
+            await _unitOfWork.SaveChangesAsync();
+        }
         return shortenedUrl?.OriginalUrl;
     }
 }

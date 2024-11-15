@@ -1,80 +1,80 @@
 using UrlShortener.Domain.Interfaces;
 
 using Microsoft.EntityFrameworkCore;
- 
+
 namespace UrlShortener.Infrastructure;
 public class Repository<T>(DbContext dbContext) : IRepository<T> where T : class
 {
 	public DbSet<T> Entities => DbContext.Set<T>();
 
-    public DbContext DbContext { get; private set; } = dbContext;
+	public DbContext DbContext { get; private set; } = dbContext;
 
-    public async Task DeleteAsync(int id, bool saveChanges = true)
+	public async Task DeleteAsync(int id, bool saveChanges = true)
+	{
+		var entity = await Entities.FindAsync(id);
+		await DeleteAsync(entity);
+
+		if (saveChanges)
 		{
-				var entity = await Entities.FindAsync(id);
-				await DeleteAsync(entity);
-
-				if (saveChanges)
-				{
-					await DbContext.SaveChangesAsync();
-				}
+			await DbContext.SaveChangesAsync();
 		}
+	}
 
-		public async Task DeleteAsync(T entity, bool saveChanges = true)
+	public async Task DeleteAsync(T entity, bool saveChanges = true)
+	{
+		Entities.Remove(entity);
+		if (saveChanges)
 		{
-				Entities.Remove(entity);
-				if (saveChanges)
-				{
-					await DbContext.SaveChangesAsync();
-				}
+			await DbContext.SaveChangesAsync();
 		}
+	}
 
-		public async Task DeleteRangeAsync(IEnumerable<T> entities, bool saveChanges = true)
-		{
+	public async Task DeleteRangeAsync(IEnumerable<T> entities, bool saveChanges = true)
+	{
 		var enumerable = entities as T[] ?? entities.ToArray();
 		if (enumerable.Length == 0)
-				{
-					Entities.RemoveRange(enumerable);
-				}
-
-				if (saveChanges)
-				{
-					await DbContext.SaveChangesAsync();
-				}
+		{
+			Entities.RemoveRange(enumerable);
 		}
+
+		if (saveChanges)
+		{
+			await DbContext.SaveChangesAsync();
+		}
+	}
 
 	public async Task<IList<T>> GetAllAsync()
+	{
+		return await Entities.ToListAsync();
+	}
+
+	public T Find(params object[] keyValues)
+	{
+		return Entities.Find(keyValues);
+	}
+
+	public virtual async Task<T> FindAsync(params object[] keyValues)
+	{
+		return await Entities.FindAsync(keyValues);
+	}
+
+	public async Task InsertAsync(T entity, bool saveChanges = true)
+	{
+		await Entities.AddAsync(entity);
+
+		if (saveChanges)
 		{
-				return await Entities.ToListAsync();
+			await DbContext.SaveChangesAsync();
 		}
+	}
 
-		public T Find(params object[] keyValues)
+	public async Task InsertRangeAsync(IEnumerable<T> entities, bool saveChanges = true)
+	{
+		await DbContext.AddRangeAsync(entities);
+
+		if (saveChanges)
 		{
-				return Entities.Find(keyValues);
+			await DbContext.SaveChangesAsync();
 		}
-
-		public virtual async Task<T> FindAsync(params object[] keyValues)
-		{
-				return await Entities.FindAsync(keyValues);
-		}
-
-		public async Task InsertAsync(T entity, bool saveChanges = true)
-		{
-				await Entities.AddAsync(entity);
-
-				if (saveChanges)
-				{
-					await DbContext.SaveChangesAsync();
-				}
-		}
-
-		public async Task InsertRangeAsync(IEnumerable<T> entities, bool saveChanges = true)
-		{
-				await DbContext.AddRangeAsync(entities);
-
-				if (saveChanges)
-				{
-					await DbContext.SaveChangesAsync();
-				}
-		}
+	}
 }

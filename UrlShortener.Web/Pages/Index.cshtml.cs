@@ -14,7 +14,7 @@ public class IndexModel : PageModel
     public IndexModel(ILogger<IndexModel> logger, IShortenedUrlService shortenedUrlService, IShortenedUrlCacheService cache)
     {
         _logger = logger;
-        _shortenedUrlService =shortenedUrlService;
+        _shortenedUrlService = shortenedUrlService;
         _cache = cache;
 
     }
@@ -26,9 +26,10 @@ public class IndexModel : PageModel
     }
 
     [BindProperty]
-    public string UrlInput {get; set;}
-    public ShortenedUrl ShortenedUrl {get; set;}
-    public async Task<IActionResult> OnPostAsync() {
+    public string UrlInput { get; set; }
+    public ShortenedUrl ShortenedUrl { get; set; }
+    public async Task<IActionResult> OnPostAsync()
+    {
 
         if (!ModelState.IsValid)
         {
@@ -36,12 +37,13 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        ShortenedUrl =  await _shortenedUrlService.Add(UrlInput);
+        ShortenedUrl = await _shortenedUrlService.Add(UrlInput);
         await LoadSharedData();
         return Page();
     }
 
-    private async Task LoadSharedData() {
+    private async Task LoadSharedData()
+    {
 
         TopAccessUrls = await _cache.GetTopUrlsAsync(10);
     }
