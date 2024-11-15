@@ -13,12 +13,10 @@ public class ShortenedUrlConfiguration : IEntityTypeConfiguration<ShortenedUrl>
 
         builder.Property(e => e.OriginalUrl)
             .IsRequired()
-            .HasConversion(v => v.ToString(), v => new Uri(v))
             .HasMaxLength(2048);
 
-        builder.Property(e => e.ShortUrl)
+        builder.Property(e => e.ShortCode)
             .IsRequired()
-            .HasConversion(v => v.ToString(), v => new Uri(v))
             .HasMaxLength(2048);
 
         builder.Property(e => e.CreatedAt)

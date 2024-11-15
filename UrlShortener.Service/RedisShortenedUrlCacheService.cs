@@ -1,6 +1,4 @@
-using System.Data;
 using System.Text.Json;
-using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
 using UrlShortener.Domain.Entities;
 using UrlShortener.Domain.Interfaces.Services;
@@ -24,16 +22,16 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
     {
         var serializedData = JsonSerializer.Serialize(url);
         var idKey = $"{IdKeyPrefix}{url.Id}";
-        var shortUrlKey = $"{ShortUrlKeyPrefix}{url.ShortUrl}";
+        var shortUrlKey = $"{ShortUrlKeyPrefix}{url.ShortCode}";
 
         await _cache.HashSetAsync(IdToShortUrlHash, idKey, shortUrlKey);
         await _cache.HashSetAsync(ShortUrlToObjectHash, shortUrlKey, serializedData);
         await _cache.SortedSetAddAsync(ClickCountSet, shortUrlKey, url.ClickCount);
     }
 
-    public async Task<ShortenedUrl?> GetFromShortUrlAsync(string shortUrl, bool isPrefixIncluded=false)
+    public async Task<ShortenedUrl?> GetFromShortCodeAsync(string shortCode, bool isPrefixIncluded=false)
     {
-        var shortUrlKey = $"{(!isPrefixIncluded ? ShortUrlKeyPrefix : "")}{shortUrl}";
+        var shortUrlKey = $"{(!isPrefixIncluded ? ShortUrlKeyPrefix : "")}{shortCode}";
 
         var serializedData = await _cache.HashGetAsync(ShortUrlToObjectHash, shortUrlKey);
         return serializedData.HasValue ? JsonSerializer.Deserialize<ShortenedUrl>(serializedData.ToString()) : null;
@@ -43,7 +41,7 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
     {
         var idKey = $"{(!isPrefixIncluded ? IdKeyPrefix : "")}{urlId}";
         var shortUrlKey = await _cache.HashGetAsync(IdToShortUrlHash, idKey);
-        return shortUrlKey.HasValue ? await GetFromShortUrlAsync(shortUrlKey.ToString()) : null;
+        return shortUrlKey.HasValue ? await GetFromShortCodeAsync(shortUrlKey.ToString()) : null;
     }
 
     public async Task<List<ShortenedUrl>> GetTopUrlsAsync(int topN)
@@ -54,7 +52,7 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
             if (shortUrl.IsNull) {
                 continue;
             }
-            var url = await GetFromShortUrlAsync(shortUrl.ToString(), true);
+            var url = await GetFromShortCodeAsync(shortUrl.ToString(), true);
             if (url != null) {
                 urls.Add(url);
             }
