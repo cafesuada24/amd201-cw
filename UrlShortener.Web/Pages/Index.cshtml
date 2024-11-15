@@ -1,5 +1,5 @@
 ﻿@page
-@model IndexModel
+@model IndexModel 
 @{
     ViewData["Title"] = "Home page";
 }
@@ -8,7 +8,29 @@
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 
-    @foreach (var item in Model.ShortenedUrls) {
+    <h2>URL Shortener</h2>
+
+    <form method="post" class="form-horizontal">
+        <div class="form-group">
+            <label asp-for="UrlInput" class="control-label">Enter Original URL:</label>
+            <input asp-for="UrlInput" class="form-control" />
+            <span asp-validation-for="UrlInput" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Shorten URL</button>
+    </form>
+    @if (Model.ShortenedUrl != null)
+    {
+        <div class="alert alert-success mt-3">
+            <strong>Shortened URL:</strong>
+            <a href="@Model.ShortenedUrl.ShortUrl.ToString()" target="_blank">@Model.ShortenedUrl.ShortUrl.ToString()</a>
+        </div>
+    }
+    @foreach (var item in Model.TopAccessUrls) {
         <div>@item.ShortUrl.ToString() @item.ClickCount</div>
+    }
+
+    @section Scripts {
+        @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     }
 </div>

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using UrlShortener.Domain.Entities;
 using UrlShortener.Domain.Interfaces.Services;
@@ -10,17 +11,38 @@ public class IndexModel : PageModel
     private readonly IShortenedUrlService _shortenedUrlService;
     private readonly IShortenedUrlCacheService _cache;
 
-    public IList<ShortenedUrl> ShortenedUrls { get; private set; }
     public IndexModel(ILogger<IndexModel> logger, IShortenedUrlService shortenedUrlService, IShortenedUrlCacheService cache)
     {
         _logger = logger;
         _shortenedUrlService =shortenedUrlService;
         _cache = cache;
+
     }
 
+    public IList<ShortenedUrl> TopAccessUrls { get; private set; }
     public async Task OnGetAsync()
     {
-        ShortenedUrls = await _cache.GetTopUrlsAsync(10);
+        await LoadSharedData();
     }
 
+    [BindProperty]
+    public string UrlInput {get; set;}
+    public ShortenedUrl ShortenedUrl {get; set;}
+    public async Task<IActionResult> OnPostAsync() {
+
+        if (!ModelState.IsValid)
+        {
+            await LoadSharedData();
+            return Page();
+        }
+
+        ShortenedUrl =  await _shortenedUrlService.Add(UrlInput);
+        await LoadSharedData();
+        return Page();
+    }
+
+    private async Task LoadSharedData() {
+
+        TopAccessUrls = await _cache.GetTopUrlsAsync(10);
+    }
 }
