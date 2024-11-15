@@ -5,17 +5,18 @@ using UrlShortener.Domain.Interfaces.Services;
 
 namespace UrlShortener.Service;
 
-public class ShortenedUrlService(IUnitOfWork unitOfWork) : IShortenedUrlService
+public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheService shortenedUrlCacheService) : IShortenedUrlService
 {
+    private const string ShortUrlFormat = "http://localhost:5162/redirect/{0}";
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IShortenedUrlCacheService _shortenedUrlCacheService = shortenedUrlCacheService;
 
     public async Task Add(ShortenedUrl shortenedUrl)
     {
         string shortCode = GenerateShortCode(shortenedUrl.OriginalUrl.ToString());
-        string shortUrlStr = $"http://shortedurl.he/{shortCode}";
-        Uri shortUrl = new(shortUrlStr, UriKind.Absolute);
+        // string shortUrlStr = $"http://shortedurl.he/{shortCode}";
 
-        shortenedUrl.ShortUrl = shortUrl;
+        shortenedUrl.ShortCode = shortCode;
         shortenedUrl.ClickCount = 0;
         shortenedUrl.CreatedAt = DateTime.Now;
         shortenedUrl.ExpireAt = null;
@@ -30,7 +31,7 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork) : IShortenedUrlService
         if (!Uri.TryCreate(url, UriKind.Absolute, out var orignalUrl) || orignalUrl == null) {
             throw new ArgumentException("Invalid url format");
         }
-        ShortenedUrl shortenedUrl = new() { OriginalUrl = orignalUrl };
+        ShortenedUrl shortenedUrl = new() { OriginalUrl = url };
 
         await Add(shortenedUrl);
 
@@ -70,5 +71,15 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork) : IShortenedUrlService
             .Replace("+", "")
             .Replace("/", "")
             .Replace("=", "");
+    }
+
+    public async Task<string?> GetOriginalUrlAsync(string shortCode)
+    {
+        ShortenedUrl? shortenedUrl =
+            await _shortenedUrlCacheService.GetFromShortCodeAsync(shortCode, false) ??
+            await _unitOfWork.Repository<ShortenedUrl>().Entities.Where(
+                    x => x.ShortCode == shortCode 
+                ).FirstOrDefaultAsync();
+        return shortenedUrl?.OriginalUrl;
     }
 }

@@ -23,11 +23,11 @@
     {
         <div class="alert alert-success mt-3">
             <strong>Shortened URL:</strong>
-            <a href="@Model.ShortenedUrl.ShortUrl.ToString()" target="_blank">@Model.ShortenedUrl.ShortUrl.ToString()</a>
+            <a href="@Model.ShortenedUrl.ShortCode" target="_blank">@Model.ShortenedUrl.ShortCode</a>
         </div>
     }
     @foreach (var item in Model.TopAccessUrls) {
-        <div>@item.ShortUrl.ToString() @item.ClickCount</div>
+        <div>@item.ShortCode @item.ClickCount</div>
     }
 
     @section Scripts {

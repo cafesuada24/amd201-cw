@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions {
 
             services.AddScoped<IShortenedUrlService, ShortenedUrlService>();
 			services.AddScoped<IShortenedUrlCacheService, RedisShortenedUrlCacheService>();
+			services.AddScoped<IRedirectionService, ShortenedUrlService>();
 			services.AddHostedService<ShortenedUrlCacheRefreshService>();
 
 			return services;
