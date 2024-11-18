@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Domain.Entities;
 using UrlShortener.Domain.Interfaces;
-using UrlShortener.Domain.Interfaces.Services;
+using UrlShortener.Domain.Interfaces.Services.ShortenedUrls;
+using UrlShortener.Domain.Interfaces.Services.ShortenedUrlsCache;
 
 namespace UrlShortener.Service;
 
@@ -11,30 +12,41 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IShortenedUrlCacheService _shortenedUrlCacheService = shortenedUrlCacheService;
 
-    public async Task Add(ShortenedUrl shortenedUrl)
-    {
-        string shortCode = GenerateShortCode(shortenedUrl.OriginalUrl.ToString());
-        // string shortUrlStr = $"http://shortedurl.he/{shortCode}";
+    // public async Task Add(ShortenedUrl shortenedUrl)
+    // {
+    //     string shortCode = GenerateShortCode(shortenedUrl.OriginalUrl.ToString());
+    //     // string shortUrlStr = $"http://shortedurl.he/{shortCode}";
 
-        shortenedUrl.ShortCode = shortCode;
-        shortenedUrl.ClickCount = 0;
-        shortenedUrl.CreatedAt = DateTime.Now;
-        shortenedUrl.ExpireAt = null;
-        shortenedUrl.LastAccessTime = null;
-        shortenedUrl.Status = 0;
+    //     shortenedUrl.ShortCode = shortCode;
+    //     shortenedUrl.ClickCount = 0;
+    //     shortenedUrl.CreatedAt = DateTime.Now;
+    //     shortenedUrl.ExpireAt = null;
+    //     shortenedUrl.LastAccessTime = null;
+    //     shortenedUrl.Status = 0;
 
-        await _unitOfWork.Repository<ShortenedUrl>().InsertAsync(shortenedUrl);
-    }
+    //     await _unitOfWork.Repository<ShortenedUrl>().InsertAsync(shortenedUrl);
+    // }
 
-    public async Task<ShortenedUrl> Add(string url)
+    public async Task<ShortenedUrl> CreateShortUrl(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var orignalUrl) || orignalUrl == null)
         {
             throw new ArgumentException("Invalid url format");
         }
-        ShortenedUrl shortenedUrl = new() { OriginalUrl = url };
 
-        await Add(shortenedUrl);
+        string shortCode = GenerateShortCode(url);
+        var shortenedUrl = new ShortenedUrl
+        {
+            OriginalUrl = url,
+            ShortCode = shortCode,
+            ClickCount = 0,
+            CreatedAt = DateTime.Now,
+            ExpireAt = null,
+            LastAccessTime = null,
+            Status = 0
+        };
+
+        await _unitOfWork.Repository<ShortenedUrl>().InsertAsync(shortenedUrl);
 
         return shortenedUrl;
     }
@@ -44,26 +56,25 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
         throw new NotImplementedException();
     }
 
-    public async Task<IList<ShortenedUrl>> GetAll()
-    {
-        return await _unitOfWork.Repository<ShortenedUrl>().GetAllAsync();
-    }
+    // public async Task<IList<ShortenedUrl>> GetAll()
+    // {
+    //     return await _unitOfWork.Repository<ShortenedUrl>().GetAllAsync();
+    // }
 
-    public DbSet<ShortenedUrl> GetEntities()
-    {
-        return _unitOfWork.Repository<ShortenedUrl>().Entities;
-    }
+    // public DbSet<ShortenedUrl> GetEntities()
+    // {
+    //     return _unitOfWork.Repository<ShortenedUrl>().Entities;
+    // }
 
-    public Task<ShortenedUrl> GetOne(int urlId)
-    {
-        throw new NotImplementedException();
-    }
+    // public Task<ShortenedUrl> GetOne(int urlId)
+    // {
+    //     throw new NotImplementedException();
+    // }
 
-    public async Task Update(ShortenedUrl shortenedUrl)
-    {
-        throw new NotImplementedException();
-    }
-
+    // public async Task Update(ShortenedUrl shortenedUrl)
+    // {
+    //     throw new NotImplementedException();
+    // }
 
     private static string GenerateShortCode(string url)
     {
@@ -76,19 +87,34 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
 
     public async Task<string?> GetOriginalUrlAsync(string shortCode)
     {
-        var repo = _unitOfWork.Repository<ShortenedUrl>();
-        var shortenedUrl =
-            await _shortenedUrlCacheService.GetFromShortCodeAsync(shortCode, false) ??
-            await repo.Entities.Where(
-                    x => x.ShortCode == shortCode
-                ).SingleAsync();
-        if (shortenedUrl != null)
+        var cacheItem = await _shortenedUrlCacheService.GetFromShortCodeAsync(shortCode);
+        string? originalUrl = cacheItem?.OriginalUrl;
+
+        if (cacheItem == null)
         {
-            repo.DbContext.Attach(shortenedUrl);
-            shortenedUrl.LastAccessTime = DateTime.Now;
-            shortenedUrl.ClickCount = shortenedUrl.ClickCount + 1;
-            await _unitOfWork.SaveChangesAsync();
+            var repo = _unitOfWork.Repository<ShortenedUrl>();
+            originalUrl = (await repo.Entities.Where(
+                    x => x.ShortCode == shortCode
+                ).SingleOrDefaultAsync())?.ShortCode.ToString();
         }
-        return shortenedUrl?.OriginalUrl;
+        return originalUrl;
+        // if (shortenedUrl != null)
+        // {
+        //     repo.DbContext.Attach(shortenedUrl);
+        //     shortenedUrl.LastAccessTime = DateTime.Now;
+        //     shortenedUrl.ClickCount = shortenedUrl.ClickCount + 1;
+        //     await _unitOfWork.SaveChangesAsync();
+        // }
+        // return shortenedUrl?.OriginalUrl;
+    }
+
+    public async Task UpdateAccessStatus(string shortCode)
+    {
+        var entity = await _unitOfWork.Repository<ShortenedUrl>().Entities.Where(x => x.ShortCode == shortCode).FirstOrDefaultAsync() ??
+            throw new ArgumentException("Invalid short code");
+
+        entity.ClickCount += 1;
+        entity.LastAccessTime = DateTime.Now;
+        await _unitOfWork.SaveChangesAsync();
     }
 }
