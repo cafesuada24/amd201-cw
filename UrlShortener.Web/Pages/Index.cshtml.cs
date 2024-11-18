@@ -31,14 +31,13 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
 
+        await LoadSharedData();
         if (!ModelState.IsValid)
         {
-            await LoadSharedData();
             return Page();
         }
 
         ShortenedUrl = await _shortenedUrlService.Add(UrlInput);
-        await LoadSharedData();
         return Page();
     }
 
