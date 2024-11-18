@@ -27,7 +27,7 @@
         </div>
     }
     @foreach (var item in Model.TopAccessUrls) {
-        <div>@item.ShortCode @item.ClickCount</div>
+        <div>@item.OriginalUrl @item.ShortCode @item.ClickCount</div>
     }
 
     @section Scripts {

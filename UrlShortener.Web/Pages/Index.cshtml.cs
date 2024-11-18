@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using UrlShortener.Domain.Entities;
-using UrlShortener.Domain.Interfaces.Services;
+using UrlShortener.Domain.Interfaces.Services.ShortenedUrls;
+using UrlShortener.Domain.Interfaces.Services.ShortenedUrlsCache;
+using UrlShortener.Domain.Models;
 
 namespace UrlShortener.Web.Pages;
 
@@ -19,7 +21,6 @@ public class IndexModel : PageModel
 
     }
 
-    public IList<ShortenedUrl> TopAccessUrls { get; private set; }
     public async Task OnGetAsync()
     {
         await LoadSharedData();
@@ -37,10 +38,11 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        ShortenedUrl = await _shortenedUrlService.Add(UrlInput);
+        ShortenedUrl = await _shortenedUrlService.CreateShortUrl(UrlInput);
         return Page();
     }
 
+    public IList<ShortenedUrlCacheItem> TopAccessUrls { get; private set; }
     private async Task LoadSharedData()
     {
 

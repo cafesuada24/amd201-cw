@@ -5,6 +5,8 @@ using UrlShortener.Infrastructure;
 using UrlShortener.Infrastructure.Databases;
 using UrlShortener.Service;
 using StackExchange.Redis;
+using UrlShortener.Domain.Interfaces.Services.ShortenedUrls;
+using UrlShortener.Domain.Interfaces.Services.ShortenedUrlsCache;
 
 // namespace UrlShortener.Web.Extensions;
 namespace Microsoft.Extensions.DependencyInjection;
@@ -53,7 +55,7 @@ public static class ServiceCollectionExtensions
 
 		services.AddScoped<IShortenedUrlService, ShortenedUrlService>();
 		services.AddScoped<IShortenedUrlCacheService, RedisShortenedUrlCacheService>();
-		services.AddScoped<IRedirectionService, ShortenedUrlService>();
+		// services.AddScoped<IRedirectionService, ShortenedUrlService>();
 		services.AddHostedService<ShortenedUrlCacheRefreshService>();
 
 		return services;
