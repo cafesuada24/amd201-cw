@@ -36,7 +36,7 @@ public class ShortenedUrlCacheRefreshService : BackgroundService
                     .Select(static x => ShortenedUrlCacheItem.FromEntity(x))
                     .ToListAsync(stoppingToken);
 
-                // foreach (var item in items)
+                // foreach (var item in topAccessUrls)
                 // {
                 //     Console.WriteLine(item);
                 // }

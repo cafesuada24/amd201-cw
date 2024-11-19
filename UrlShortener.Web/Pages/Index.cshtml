@@ -4,6 +4,7 @@
     ViewData["Title"] = "Home page";
 }
 
+@*
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
@@ -33,4 +34,60 @@
     @section Scripts {
         @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     }
-</div>
+</div> *@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Page</title>
+    <link rel="stylesheet" href="~/css/index.css" />
+    <environment include="Development">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+    </environment>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">ShortURL</div>
+                <button class="theme-toggle">🌙</button>
+        </header>
+        <main>
+            <h1>Paste the <span class="highlight">URL</span> to be shortened</h1>
+            <form method="post" class="url-input" style="flex-direction: column;">
+            <div style="display: flex; gap: 0.5rem;">
+                    <input asp-for="UrlInput" type="text" placeholder="Enter the link here"/>
+                    <button type="submit" >Shorten Now!</button>
+                </div>                
+                <span asp-validation-for="UrlInput" class="text-danger"></span>
+            </form>
+            <br>
+            <h2>Top Access Urls</h2>
+            <table class="links-table">
+                <thead>
+                    <tr>
+                        <th>Short Link</th>
+                        <th>Original Link</th>
+                        @* <th>QR Code</th> *@
+                        <th>Clicks</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                @foreach (var url in Model.TopAccessUrls) {
+                <tr>
+                        <td><a href="http://localhost:5162/redirect/@url.ShortCode">@url.ShortCode</a></td>
+                        <td><a href="@url.OriginalUrl">@url.OriginalUrl</a></td>
+                        <td>@url.ClickCount</td>
+                        <td><button class="copy-btn">Copy Link</button></td>
+                    </tr> 
+                }
+                <tbody>
+                </tbody>
+            </table>
+        </main>
+    </div>
+</body>
+@section scripts{
+   <partial name="_ValidationScriptsPartial" />
+}

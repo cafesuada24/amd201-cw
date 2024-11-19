@@ -31,17 +31,15 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
 
         // await _cache.HashSetAsync(IdToShortUrlHash, idKey, shortUrlKey);
         // await _cache.HashSetAsync(ShortUrlToObjectHash, shortUrlKey, serializedData);
-        var entries = ConvertToHashEntries(item);
-        await _cache.HashSetAsync(shortUrlKey, entries);
+        // var entries = ConvertToHashEntries(item);
+        await SetUrlCache(item, shortUrlKey);
         await _cache.SortedSetAddAsync(ClickCountSet, item.ShortCode, item.ClickCount);
     }
 
     public async Task<ShortenedUrlCacheItem?> GetFromShortCodeAsync(string shortCode)
     {
         var shortUrlKey = $"{ShortUrlKeyPrefix}{shortCode}";
-        if (!await _cache.HashExistsAsync(shortUrlKey, "OriginalUrl") ||
-            !await _cache.HashExistsAsync(shortUrlKey, "ClickCount") ||
-            !await _cache.HashExistsAsync(shortUrlKey, "LastAccessTime"))
+        if (!await IsValidUrlCache(shortUrlKey))
         {
             return null;
         }
@@ -75,7 +73,6 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
             }
             var url = await GetFromShortCodeAsync(shortUrl.ToString());
 
-            Console.WriteLine(url);
             if (url != null)
             {
                 urls.Add(url);
@@ -114,4 +111,28 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
             await AddUrlAsync(url);
         }
     }
+
+    public async Task<bool> TryUpdateAccessStatus(string shortCode)
+    {
+        var item = await GetFromShortCodeAsync(shortCode);
+        if (item == null)
+        {
+            return false;
+        }
+        item.ClickCount += 1;
+        item.LastAccessTime = DateTime.Now.Ticks;
+
+
+        var shortUrlKey = $"{ShortUrlKeyPrefix}{shortCode}";
+        await SetUrlCache(item, shortUrlKey);
+        return true;
+    }
+
+    private async Task SetUrlCache(ShortenedUrlCacheItem cacheItem, string key)
+        => await _cache.HashSetAsync(key, ConvertToHashEntries(cacheItem));
+
+    private async Task<bool> IsValidUrlCache(string key)
+        => await _cache.HashExistsAsync(key, "OriginalUrl") &
+            await _cache.HashExistsAsync(key, "ClickCount") &&
+            await _cache.HashExistsAsync(key, "LastAccessTime");
 }

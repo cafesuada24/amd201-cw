@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using UrlShortener.Domain.Entities;
@@ -27,6 +28,8 @@ public class IndexModel : PageModel
     }
 
     [BindProperty]
+    [Required(ErrorMessage = "Url is required.")]
+    [Url(ErrorMessage = "Please enter a valid url.")]
     public string UrlInput { get; set; }
     public ShortenedUrl ShortenedUrl { get; set; }
     public async Task<IActionResult> OnPostAsync()

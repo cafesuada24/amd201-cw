@@ -110,6 +110,10 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
 
     public async Task UpdateAccessStatus(string shortCode)
     {
+        if (await _shortenedUrlCacheService.TryUpdateAccessStatus(shortCode))
+        {
+            return;
+        }
         var entity = await _unitOfWork.Repository<ShortenedUrl>().Entities.Where(x => x.ShortCode == shortCode).FirstOrDefaultAsync() ??
             throw new ArgumentException("Invalid short code");
 
