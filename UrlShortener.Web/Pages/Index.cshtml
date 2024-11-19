@@ -62,6 +62,10 @@
                 </div>                
                 <span asp-validation-for="UrlInput" class="text-danger"></span>
             </form>
+            @if(Model.ShortenedUrl != null) {
+                <p style="text-align: center;">Your shortened url: <a href="@Model.ShortenedUrl.OriginalUrl">@Model.ShortenedUrl.ShortCode</a></p>
+            }
+
             <br>
             <h2>Top Access Urls</h2>
             <table class="links-table">
