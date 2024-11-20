@@ -7,4 +7,6 @@ public interface IShortenedUrlCacheService : ITopAccessUrlCacheService
     Task AddUrlAsync(ShortenedUrlCacheItem url);
     Task<ShortenedUrlCacheItem?> GetFromShortCodeAsync(string shortCode);
     Task<bool> TryUpdateAccessStatus(string shortCode);
+    Task ClearCacheAsync();
+    Task<IList<ShortenedUrlCacheItem>> GetAllAsync();
 }

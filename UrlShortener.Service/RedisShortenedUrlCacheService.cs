@@ -25,13 +25,8 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
 
     public async Task AddUrlAsync(ShortenedUrlCacheItem item)
     {
-        // var serializedData = JsonSerializer.Serialize(url);
-        // var idKey = $"{IdKeyPrefix}{url.Id}";
         var shortUrlKey = $"{ShortUrlKeyPrefix}{item.ShortCode}";
 
-        // await _cache.HashSetAsync(IdToShortUrlHash, idKey, shortUrlKey);
-        // await _cache.HashSetAsync(ShortUrlToObjectHash, shortUrlKey, serializedData);
-        // var entries = ConvertToHashEntries(item);
         await SetUrlCache(item, shortUrlKey);
         await _cache.SortedSetAddAsync(ClickCountSet, item.ShortCode, item.ClickCount);
     }
@@ -39,27 +34,8 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
     public async Task<ShortenedUrlCacheItem?> GetFromShortCodeAsync(string shortCode)
     {
         var shortUrlKey = $"{ShortUrlKeyPrefix}{shortCode}";
-        if (!await IsValidUrlCache(shortUrlKey))
-        {
-            return null;
-        }
-        return new()
-        {
-            OriginalUrl = await _cache.HashGetAsync(shortUrlKey, "OriginalUrl"),
-            ShortCode = shortCode,
-            ClickCount = (int)await _cache.HashGetAsync(shortUrlKey, "ClickCount"),
-            LastAccessTime = (long)await _cache.HashGetAsync(shortUrlKey, "LastAccessTime")
-        };
-        // return new() { ShortCode = serializedData.ToString() };
-        // return serializedData.HasValue ? JsonSerializer.Deserialize<ShortenedUrl>(serializedData.ToString()) : null;
+        return await GetFromKey(shortUrlKey);
     }
-
-    // public async Task<ShortenedUrl?> GetFromUrlIdAsync(int urlId, bool isPrefixIncluded = false)
-    // {
-    //     var idKey = $"{(!isPrefixIncluded ? IdKeyPrefix : "")}{urlId}";
-    //     var shortUrlKey = await _cache.HashGetAsync(IdToShortUrlHash, idKey);
-    //     return shortUrlKey.HasValue ? await GetFromShortCodeAsync(shortUrlKey.ToString()) : null;
-    // }
 
     public async Task<List<ShortenedUrlCacheItem>> GetTopUrlsAsync(int topN)
     {
@@ -81,30 +57,9 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
         return urls;
     }
 
-    // public async Task RefreshTopUrlsAsync(List<ShortenedUrlCacheItem> urls)
-    // {
-    //     await _cache.KeyDeleteAsync(IdToShortUrlHash);
-    //     await _cache.KeyDeleteAsync(ShortUrlToObjectHash);
-    //     await _cache.KeyDeleteAsync(ClickCountSet);
-
-    //     foreach (var url in urls)
-    //     {
-    //         await AddUrlAsync(url);
-    //     }
-    // }
-
-    private static HashEntry[] ConvertToHashEntries(ShortenedUrlCacheItem item)
-        => [
-            new ("OriginalUrl", item.OriginalUrl),
-            new ("ClickCount", item.ClickCount),
-            new ("LastAccessTime", item.LastAccessTime)
-        ];
-
     public async Task RefreshTopUrlsAsync(IList<ShortenedUrlCacheItem> urls)
     {
-        var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints().First());
-        var keys = server.Keys(pattern: ShortUrlKeyPrefix).ToArray();
-        await _cache.KeyDeleteAsync(keys);
+        await ClearCacheAsync();
 
         foreach (var url in urls)
         {
@@ -128,11 +83,66 @@ public class RedisShortenedUrlCacheService : IShortenedUrlCacheService
         return true;
     }
 
-    private async Task SetUrlCache(ShortenedUrlCacheItem cacheItem, string key)
+    public async Task ClearCacheAsync()
+    {
+        var keys = GetKeys(ShortUrlKeyPrefix);
+        await _cache.KeyDeleteAsync(keys);
+    }
+
+    public async Task<IList<ShortenedUrlCacheItem>> GetAllAsync()
+    {
+        var keys = GetKeys(ShortUrlKeyPrefix);
+        IList<ShortenedUrlCacheItem> items = [];
+        foreach (var key in keys)
+        {
+            var value = await GetFromKey(key.ToString());
+            if (value != null)
+            {
+                items.Add(value);
+            }
+        }
+        return items;
+    }
+
+    private RedisKey[] GetKeys(string pattern)
+    {
+        var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints().First());
+        // var server = _connectionMultiplexer.GetServer("host");
+        return server.Keys(pattern: pattern + "*").ToArray();
+    }
+
+    private async Task<ShortenedUrlCacheItem?> GetFromKey(string key)
+    {
+        if (!await IsValidUrlCache(key))
+        {
+            return null;
+        }
+        return new()
+        {
+            Id = (int)await _cache.HashGetAsync(key, "ID"),
+            OriginalUrl = await _cache.HashGetAsync(key, "OriginalUrl"),
+            ShortCode = await _cache.HashGetAsync(key, "ShortCode"),
+            ClickCount = (int)await _cache.HashGetAsync(key, "ClickCount"),
+            LastAccessTime = (long)await _cache.HashGetAsync(key, "LastAccessTime")
+        };
+    }
+
+    private async Task SetUrlCache(ShortenedUrlCacheItem cacheItem, RedisKey key)
         => await _cache.HashSetAsync(key, ConvertToHashEntries(cacheItem));
 
     private async Task<bool> IsValidUrlCache(string key)
-        => await _cache.HashExistsAsync(key, "OriginalUrl") &
+        => await _cache.HashExistsAsync(key, "OriginalUrl") &&
+            await _cache.HashExistsAsync(key, "ShortCode") &&
+            await _cache.HashExistsAsync(key, "ID") &&
             await _cache.HashExistsAsync(key, "ClickCount") &&
             await _cache.HashExistsAsync(key, "LastAccessTime");
+
+    private static HashEntry[] ConvertToHashEntries(ShortenedUrlCacheItem item)
+        => [
+            new ("ID", item.Id),
+            new ("OriginalUrl", item.OriginalUrl),
+            new ("ShortCode", item.ShortCode),
+            new ("ClickCount", item.ClickCount),
+            new ("LastAccessTime", item.LastAccessTime)
+        ];
 }

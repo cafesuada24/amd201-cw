@@ -8,7 +8,6 @@ namespace UrlShortener.Service;
 
 public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheService shortenedUrlCacheService) : IShortenedUrlService
 {
-    private const string ShortUrlFormat = "http://localhost:5162/redirect/{0}";
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IShortenedUrlCacheService _shortenedUrlCacheService = shortenedUrlCacheService;
 
