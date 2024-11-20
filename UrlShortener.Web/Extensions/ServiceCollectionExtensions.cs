@@ -24,9 +24,9 @@ public static class ServiceCollectionExtensions
 
 		services.AddDbContext<ShortUrlDbContext>(options =>
 		{
-			options.UseSqlite(
+			options.UseSqlServer(
 				configuration.GetConnectionString("ShortenedUrlContext") ?? throw new InvalidOperationException("Connection string 'ShortenedUrlContext' not found."),
-				sqliteOptions => sqliteOptions.CommandTimeout(128));
+				mssqlptions => mssqlptions.CommandTimeout(128));
 		});
 
 		services.AddScoped<Func<ShortUrlDbContext>>((provider) => () => provider.GetService<ShortUrlDbContext>());

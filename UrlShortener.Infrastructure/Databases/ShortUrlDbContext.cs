@@ -1,8 +1,11 @@
 # nullable disable
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
 using UrlShortener.Domain.Entities;
 using UrlShortener.Infrastructure.Databases.Configurations;
+
 
 namespace UrlShortener.Infrastructure.Databases;
 
