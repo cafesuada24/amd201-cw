@@ -37,6 +37,7 @@ public class ShortenedUrlCacheRefreshService : BackgroundService
                     .Select(static x => ShortenedUrlCacheItem.FromEntity(x))
                     .ToListAsync(stoppingToken);
 
+                await UpdateCacheToDatabaseAsync();
                 await cacheService.RefreshTopUrlsAsync(topAccessUrls);
             }
             await Task.Delay(RefreshInterval, stoppingToken);
@@ -72,11 +73,15 @@ public class ShortenedUrlCacheRefreshService : BackgroundService
                     continue;
                 }
 
-                entity.ClickCount = data.ClickCount;
+                if (data.ClickCount > entity.ClickCount)
+                {
+                    entity.ClickCount = data.ClickCount;
+                }
                 if (data.LastAccessTime > -1)
                 {
                     entity.LastAccessTime = new DateTime(data.LastAccessTime);
                 }
+                repo.Entities.Update(entity);
 
                 await unitOfWork.SaveChangesAsync();
             }

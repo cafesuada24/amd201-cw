@@ -37,35 +37,34 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
             throw new ArgumentException("Invalid url format");
         }
 
-        var shortenedUrl = new ShortenedUrl
-        {
-            OriginalUrl = url,
-            ClickCount = 0,
-            CreatedAt = DateTime.Now,
-            ExpireAt = null,
-            LastAccessTime = null,
-            Status = 0
-        };
 
-        bool success = false;
         int increment = 0;
-        do
+        var time = DateTime.Now;
+        // do
+        // {
+        try
         {
-            try
+            string shortCode = GenerateShortCode(url.Append(increment));
+            var shortenedUrl = new ShortenedUrl
             {
-                string shortCode = GenerateShortCode(url + increment);
-                shortenedUrl.ShortCode = shortCode;
-                await _unitOfWork.Repository<ShortenedUrl>().InsertAsync(shortenedUrl);
-                success = true;
-            }
-            catch (Exception)
-            {
-                ++increment;
-            }
-        } while (!success);
+                OriginalUrl = url,
+                ShortCode = shortCode,
+                ClickCount = 0,
+                CreatedAt = time,
+                ExpireAt = null,
+                LastAccessTime = null,
+                Status = 0
+            };
+            await _unitOfWork.Repository<ShortenedUrl>().InsertAsync(shortenedUrl);
+            return shortenedUrl;
+        }
+        catch (Exception)
+        {
+            ++increment;
+        }
 
-
-        return shortenedUrl;
+        // } while (true);
+        return null;
     }
 
     public async Task Delete(ShortenedUrl shortenedUrl)
@@ -106,7 +105,7 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
         using var md5 = MD5.Create();
         byte[] hashBytes = MD5.HashData(Encoding.UTF8.GetBytes(url));
 
-        ulong hashSegment = BitConverter.ToUInt64(hashBytes, 0) & 0xFFFFFFFFFFFF; // Mask to keep only 6 bytes
+        ulong hashSegment = BitConverter.ToUInt64(hashBytes, 0) & 0xFFFFFFFFFFFF;
 
         return Base62Encode(hashSegment);
     }
