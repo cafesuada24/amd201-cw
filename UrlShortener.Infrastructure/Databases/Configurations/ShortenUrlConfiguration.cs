@@ -15,6 +15,7 @@ public class ShortenedUrlConfiguration : IEntityTypeConfiguration<ShortenedUrl>
             .IsRequired()
             .HasMaxLength(2048);
 
+        builder.HasIndex(e => e.ShortCode).IsUnique(true);
         builder.Property(e => e.ShortCode)
             .IsRequired()
             .HasMaxLength(2048);

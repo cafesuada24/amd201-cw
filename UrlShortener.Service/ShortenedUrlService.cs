@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using UrlShortener.Domain.Entities;
 using UrlShortener.Domain.Interfaces;
@@ -8,6 +10,8 @@ namespace UrlShortener.Service;
 
 public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheService shortenedUrlCacheService) : IShortenedUrlService
 {
+    private const string Base62Characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IShortenedUrlCacheService _shortenedUrlCacheService = shortenedUrlCacheService;
 
@@ -33,11 +37,9 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
             throw new ArgumentException("Invalid url format");
         }
 
-        string shortCode = GenerateShortCode(url);
         var shortenedUrl = new ShortenedUrl
         {
             OriginalUrl = url,
-            ShortCode = shortCode,
             ClickCount = 0,
             CreatedAt = DateTime.Now,
             ExpireAt = null,
@@ -45,7 +47,23 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
             Status = 0
         };
 
-        await _unitOfWork.Repository<ShortenedUrl>().InsertAsync(shortenedUrl);
+        bool success = false;
+        int increment = 0;
+        do
+        {
+            try
+            {
+                string shortCode = GenerateShortCode(url + increment);
+                shortenedUrl.ShortCode = shortCode;
+                await _unitOfWork.Repository<ShortenedUrl>().InsertAsync(shortenedUrl);
+                success = true;
+            }
+            catch (Exception)
+            {
+                ++increment;
+            }
+        } while (!success);
+
 
         return shortenedUrl;
     }
@@ -77,11 +95,20 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
 
     private static string GenerateShortCode(string url)
     {
-        int hash = url.GetHashCode();
-        return Convert.ToBase64String(BitConverter.GetBytes(hash))
-            .Replace("+", "")
-            .Replace("/", "")
-            .Replace("=", "");
+        // int hash = url.GetHashCode();
+        // return Convert.ToBase64String(BitConverter.GetBytes(hash))
+        //     .Replace("+", "")
+        //     .Replace("/", "")
+        //     .Replace("=", "");
+        if (string.IsNullOrWhiteSpace(url))
+            throw new ArgumentException("The URL cannot be null or empty.", nameof(url));
+
+        using var md5 = MD5.Create();
+        byte[] hashBytes = MD5.HashData(Encoding.UTF8.GetBytes(url));
+
+        ulong hashSegment = BitConverter.ToUInt64(hashBytes, 0) & 0xFFFFFFFFFFFF; // Mask to keep only 6 bytes
+
+        return Base62Encode(hashSegment);
     }
 
     public async Task<string?> GetOriginalUrlAsync(string shortCode)
@@ -97,14 +124,6 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
                 ).SingleOrDefaultAsync())?.ShortCode.ToString();
         }
         return originalUrl;
-        // if (shortenedUrl != null)
-        // {
-        //     repo.DbContext.Attach(shortenedUrl);
-        //     shortenedUrl.LastAccessTime = DateTime.Now;
-        //     shortenedUrl.ClickCount = shortenedUrl.ClickCount + 1;
-        //     await _unitOfWork.SaveChangesAsync();
-        // }
-        // return shortenedUrl?.OriginalUrl;
     }
 
     public async Task UpdateAccessStatus(string shortCode)
@@ -120,4 +139,17 @@ public class ShortenedUrlService(IUnitOfWork unitOfWork, IShortenedUrlCacheServi
         entity.LastAccessTime = DateTime.Now;
         await _unitOfWork.SaveChangesAsync();
     }
+
+    private static string Base62Encode(ulong value)
+    {
+        var sb = new StringBuilder();
+        do
+        {
+            sb.Insert(0, Base62Characters[(int)(value % 62)]);
+            value /= 62;
+        } while (value > 0);
+
+        return sb.ToString();
+    }
+
 }

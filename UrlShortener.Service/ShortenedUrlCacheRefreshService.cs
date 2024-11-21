@@ -12,7 +12,7 @@ public class ShortenedUrlCacheRefreshService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     // private readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(10);
-    private readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(15);
+    private readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(1);
 
     public ShortenedUrlCacheRefreshService(IServiceProvider serviceProvider)
     {
